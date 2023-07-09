@@ -180,6 +180,7 @@ const refresh = async() => {
 	const nowMs = Date.now();
 	const nowMinuteMs = nowMs - (nowMs % (msPerSec * secPerMin));
 	const lastUpdateMs = nowMinuteMs - refreshIntervalMs;
+	console.log(`Refresh Started At: ${dateToStringMin(new Date(nowMs))}`);
 
 	Dotenv.config();
 	const notion = new Client({
