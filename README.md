@@ -1,4 +1,4 @@
-# AlgoSilo
+# NotionIntegrator
 MetaDB에 DB 별로 흩어진 Task들을 통합하여 구글 캘린더에 자동으로 업로드하는 봇입니다.
 
 # Usage
