@@ -113,8 +113,8 @@ async function authorize() {
 
 const insertEvent = async(auth, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) => {
 	const nowStr = dateToStringMin(new Date());
-	const eventTitle = `[${databaseName}${taskProjectNamesStr ? "/" : ""}${taskProjectNamesStr}] ${taskTitle}`;
-	const eventDescription = `담당자: ${taskPersonNamesStr}, NotionPageId: ${taskPageId}, UpdatedAt: ${nowStr}`;
+	const eventTitle = taskTitle;
+	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, UpdatedAt: ${nowStr}, NotionPageId: ${taskPageId}`;
 	if(!taskStartDate) {
 		console.log(`${nowStr}: ${eventTitle} (No Date)`);
 		return;
