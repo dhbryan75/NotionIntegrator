@@ -199,7 +199,7 @@ const refresh = async() => {
 			page_size: pageSize,
 		})).results;
 
-		const callout = databaseBlocks.findLast((block) => {
+		const callout = databaseBlocks.reverse().find((block) => {
 			return block.type === "callout";
 		});
 		const callOutBlocks = (await notion.blocks.children.list({
