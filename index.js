@@ -10,9 +10,11 @@ const { google } = require('googleapis');
 
 const msPerSec = 1000;
 const secPerMin = 60;
+const minPerHour = 60;
+const hourPerDay = 24;
 const refreshIntervalMs = msPerSec * secPerMin * 5;
-// const refreshIntervalMs = msPerSec * secPerMin * 60 * 10;
-// const refreshIntervalMs = msPerSec * secPerMin * 60 * 24 * 7 * 10000;
+// const refreshIntervalMs = msPerSec * secPerMin * minPerHour * 10;
+// const refreshIntervalMs = msPerSec * secPerMin * minPerHour * hourPerDay * 7 * 10000;
 const pageSize = 50;
 
 
@@ -23,6 +25,10 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 // time.
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+
+const delay = async function(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 const dateToStringTime = function(date) {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
@@ -35,7 +41,6 @@ const dateToStringDate = function(date) {
 const dateToStringMin = function(date) {
     return dateToStringDate(date) + " " + dateToStringTime(date);
 };
-
 
 const strToDate = (dateStr) => {
 	if (!dateStr) {
@@ -66,7 +71,7 @@ async function loadSavedCredentialsIfExist() {
 	} catch (err) {
 		return null;
 	}
-}
+};
 
 /**
  * Serializes credentials to a file compatible with GoogleAUth.fromJSON.
@@ -85,7 +90,7 @@ async function saveCredentials(client) {
 		refresh_token: client.credentials.refresh_token,
 	});
 	await fs.writeFile(TOKEN_PATH, payload);
-}
+};
 
 /**
  * Load or request or authorization to call APIs.
@@ -104,18 +109,24 @@ async function authorize() {
 		await saveCredentials(client);
 	}
 	return client;
-}
+};
 
-async function insertEvent(auth, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) {
+const insertEvent = async(auth, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) => {
 	const nowStr = dateToStringMin(new Date());
-	const eventTitle = `[${databaseName}/${taskProjectNamesStr}] ${taskTitle}`;
-	const eventDescription = `담당자: ${taskPersonNamesStr}, 출처: Notion ${nowStr}`;
+	const eventTitle = `[${databaseName}${taskProjectNamesStr ? "/" : ""}${taskProjectNamesStr}] ${taskTitle}`;
+	const eventDescription = `담당자: ${taskPersonNamesStr}, NotionPageId: ${taskPageId}`;
+	if(!taskStartDate) {
+		console.log(`${nowStr}: ${eventTitle} (No Date)`);
+		return;
+	}
+
+	taskEndDate = taskEndDate ? taskEndDate : taskStartDate;
 	const eventStart = {
 		'dateTime': taskStartDate.toISOString(),
 		'timeZone': 'Asia/Seoul',
 	};
 	const eventEnd = {
-		'dateTime': (taskEndDate ? taskEndDate : taskStartDate).toISOString(),
+		'dateTime': taskEndDate.toISOString(),
 		'timeZone': 'Asia/Seoul',
 	};
 	let event = {
@@ -125,20 +136,46 @@ async function insertEvent(auth, databaseName, taskProjectNamesStr, taskTitle, t
 		'end': eventEnd,
 	};
 	const calendar = google.calendar({version: 'v3', auth});
-	await calendar.events.insert({
+
+	const searchStartDate = new Date(taskStartDate.getTime() - msPerSec * secPerMin * minPerHour * hourPerDay);
+	const searchEndDate = new Date(taskEndDate.getTime() + msPerSec * secPerMin * minPerHour * hourPerDay);
+	const searchResult = await calendar.events.list({
+		auth: auth,
+		calendarId: 'primary',
+		timeMax: searchEndDate.toISOString(),
+		timeMin: searchStartDate.toISOString(),
+	});
+	const sameEvents = searchResult.data.items.filter((event) => {
+		return event.description?.includes(taskPageId);
+	});
+	for(let event of sameEvents) {
+		const eventId = event.id;
+		calendar.events.delete({
+			auth: auth,
+			calendarId: 'primary',
+			eventId: eventId,
+		}), function (error, event) {
+			if (error) {
+				console.log(eventTitle);
+				return;
+			}
+		};
+	}
+
+	calendar.events.insert({
 		auth: auth,
 		calendarId: 'primary',
 		resource: event,
 	}, function (error, event) {
 		if (error) {
-			console.error(eventTitle);
+			console.log(eventTitle);
 			return;
 		}
 		console.log(`${nowStr}: ${eventTitle}`);
 	});
-}
+};
 
-const refresh = async () => {
+const refresh = async() => {
 	const auth = await authorize();
 	const nowMs = Date.now();
 	const nowMinuteMs = nowMs - (nowMs % (msPerSec * secPerMin));
@@ -155,7 +192,7 @@ const refresh = async () => {
 		page_size: pageSize,
 	})).results;
 
-	databasePages.forEach(async (databasePage) => {
+	for(let databasePage of databasePages) {
 		const databaseName = databasePage.properties["이름"].title[0]?.plain_text;
 		const databaseBlocks = (await notion.blocks.children.list({
 			block_id: databasePage.id,
@@ -196,14 +233,14 @@ const refresh = async () => {
 		const recentFilter = {
 			"and": [
 				{
-					"timestamp": "created_time",
-					"created_time": {
+					"timestamp": "last_edited_time",
+					"last_edited_time": {
 						"on_or_after": new Date(lastUpdateMs).toISOString().split(".")[0],
 					}
 				},
 				{
-					"timestamp": "created_time",
-					"created_time": {
+					"timestamp": "last_edited_time",
+					"last_edited_time": {
 						"before": new Date(nowMinuteMs).toISOString().split(".")[0],
 					}
 				},
@@ -226,7 +263,8 @@ const refresh = async () => {
 				nextCursor = taskPageResponse.next_cursor;
 			}
 		}
-		taskPages.forEach(async (taskPage) => {
+		for(let taskPage of taskPages) {
+			const taskPageId =  taskPage.id;
 			const taskTitle = taskPage.properties["제목"].title[0]?.plain_text;
 			const taskStartDate = strToDate(taskPage.properties["날짜"].date?.start);
 			const taskEndDate = strToDate(taskPage.properties["날짜"].date?.end);
@@ -248,17 +286,16 @@ const refresh = async () => {
 			const taskPersonNames = await Promise.all(taskPersonNamePromises);
 			const taskPersonNamesStr = taskPersonNames.join(", ");
 
-			insertEvent(auth, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr);
-		});
-	});
+			await insertEvent(auth, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr);
+		}
+	}
 };
-
 
 const main = async () => {
 	try {
 		await refresh();
 	} catch (error) {
-		console.error(error);
+		console.log(error);
 	}
 }
 
