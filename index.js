@@ -12,9 +12,10 @@ const msPerSec = 1000;
 const secPerMin = 60;
 const minPerHour = 60;
 const hourPerDay = 24;
+const msPerDay = msPerSec * secPerMin * minPerHour * hourPerDay;
 const refreshIntervalMs = msPerSec * secPerMin * 5;
 // const refreshIntervalMs = msPerSec * secPerMin * minPerHour * 10;
-// const refreshIntervalMs = msPerSec * secPerMin * minPerHour * hourPerDay * 7 * 10000;
+// const refreshIntervalMs = msPerDay * 7 * 10000;
 const pageSize = 50;
 
 
@@ -120,7 +121,14 @@ const insertEvent = async(auth, taskPageId, databaseName, taskProjectNamesStr, t
 		return;
 	}
 
-	taskEndDate = taskEndDate ? taskEndDate : taskStartDate;
+	if(taskEndDate) {
+		if(taskEndDate.getHours() === 0 && taskEndDate.getMinutes() === 0) {
+			taskEndDate = new Date(taskEndDate.getTime() + msPerDay);
+		}
+	}
+	else {
+		taskEndDate = taskStartDate;
+	}
 	const eventStart = {
 		'dateTime': taskStartDate.toISOString(),
 		'timeZone': 'Asia/Seoul',
@@ -137,8 +145,8 @@ const insertEvent = async(auth, taskPageId, databaseName, taskProjectNamesStr, t
 	};
 	const calendar = google.calendar({version: 'v3', auth});
 
-	const searchStartDate = new Date(taskStartDate.getTime() - msPerSec * secPerMin * minPerHour * hourPerDay);
-	const searchEndDate = new Date(taskEndDate.getTime() + msPerSec * secPerMin * minPerHour * hourPerDay);
+	const searchStartDate = new Date(taskStartDate.getTime() - msPerDay);
+	const searchEndDate = new Date(taskEndDate.getTime() + msPerDay);
 	const searchResult = await calendar.events.list({
 		auth: auth,
 		calendarId: 'primary',
