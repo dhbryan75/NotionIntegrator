@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node ."
+    "test": "node .",
+    "start": "nohup node . >> ./result.out &"
   },
   "author": "",
   "license": "ISC",
