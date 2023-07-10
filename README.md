@@ -1,5 +1,6 @@
 # NotionIntegrator
-MetaDB에 DB 별로 흩어진 Task들을 통합하여 구글 캘린더에 자동으로 업로드하는 봇입니다.
+Notion to Google Calendar 1-way 연동 및 통합 봇
+MetaDB에 DB 별로 흩어진 Task들을 통합하여 구글 캘린더에 자동으로 업로드합니다.
 
 # Usage
 1. ".env.sample"을 복사하여 ".env" 파일을 만들고 노션 API key 및 MetaDB의 databaseId를 추가해야합니다.
