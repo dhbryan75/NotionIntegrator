@@ -142,6 +142,10 @@ const insertEvent = async(auth, databaseId, taskPageId, taskUrl, databaseName, t
 		'description': eventDescription,
 		'start': eventStart,
 		'end': eventEnd,
+		"reminders": {
+			"useDefault":false,
+			"overrides":[],
+		},
 	};
 	const calendar = google.calendar({version: 'v3', auth});
 
