@@ -112,10 +112,10 @@ async function authorize() {
 	return client;
 };
 
-const insertEvent = async(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) => {
+const insertEvent = async(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr) => {
 	const nowStr = dateToStringMin(new Date());
 	const eventTitle = taskTitle;
-	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, UpdatedAt: ${nowStr}, NotionDatabaseId: ${databaseId}, NotionPageId: ${taskPageId}`;
+	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, Status: ${taskStatus}, UpdatedAt: ${nowStr}, NotionDatabaseId: ${databaseId}, NotionPageId: ${taskPageId}`;
 	if(!taskStartDate) {
 		console.log(`${nowStr}: ${eventTitle} (No Date)`);
 		return;
@@ -278,7 +278,7 @@ const refresh = async() => {
 			const taskTitle = taskPage.properties["제목"].title[0]?.plain_text;
 			const taskStartDate = strToDate(taskPage.properties["날짜"].date?.start);
 			const taskEndDate = strToDate(taskPage.properties["날짜"].date?.end);
-			// const taskStatus = taskPage.properties["상태"].status?.name;
+			const taskStatus = taskPage.properties["상태"].status?.name;
 
 			const taskProjectPages = taskPage.properties["Projects"].relation;
 			const taskProjectNamePromises = taskProjectPages.map(async (page) => {
@@ -296,7 +296,7 @@ const refresh = async() => {
 			const taskPersonNames = await Promise.all(taskPersonNamePromises);
 			const taskPersonNamesStr = taskPersonNames.join(", ");
 
-			await insertEvent(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr);
+			await insertEvent(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr);
 		}
 	}
 };
