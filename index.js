@@ -112,10 +112,10 @@ async function authorize() {
 	return client;
 };
 
-const insertEvent = async(auth, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) => {
+const insertEvent = async(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr) => {
 	const nowStr = dateToStringMin(new Date());
 	const eventTitle = taskTitle;
-	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, UpdatedAt: ${nowStr}, NotionPageId: ${taskPageId}`;
+	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, UpdatedAt: ${nowStr}, NotionDatabaseId: ${databaseId}, NotionPageId: ${taskPageId}`;
 	if(!taskStartDate) {
 		console.log(`${nowStr}: ${eventTitle} (No Date)`);
 		return;
@@ -203,8 +203,9 @@ const refresh = async() => {
 
 	for(let databasePage of databasePages) {
 		const databaseName = databasePage.properties["이름"].title[0]?.plain_text;
+		const databaseId = databasePage.id;
 		const databaseBlocks = (await notion.blocks.children.list({
-			block_id: databasePage.id,
+			block_id: databaseId,
 			page_size: pageSize,
 		})).results;
 
@@ -295,7 +296,7 @@ const refresh = async() => {
 			const taskPersonNames = await Promise.all(taskPersonNamePromises);
 			const taskPersonNamesStr = taskPersonNames.join(", ");
 
-			await insertEvent(auth, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr);
+			await insertEvent(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStartDate, taskEndDate, taskPersonNamesStr);
 		}
 	}
 };
