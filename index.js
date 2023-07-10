@@ -112,10 +112,10 @@ async function authorize() {
 	return client;
 };
 
-const insertEvent = async(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr) => {
+const insertEvent = async(auth, databaseId, taskPageId, taskUrl, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr) => {
 	const nowStr = dateToStringMin(new Date());
 	const eventTitle = taskTitle;
-	const eventDescription = `DB: ${databaseName}, Project: ${taskProjectNamesStr}, Responsibility: ${taskPersonNamesStr}, Status: ${taskStatus}, UpdatedAt: ${nowStr}, NotionDatabaseId: ${databaseId}, NotionPageId: ${taskPageId}`;
+	const eventDescription = `[${databaseName}/${taskProjectNamesStr}] Responsibility: ${taskPersonNamesStr} / Status: ${taskStatus} / UpdatedAt: ${nowStr} / NotionDatabaseId: ${databaseId} / NotionPageId: ${taskPageId} / NotionPageUrl: ${taskUrl}`;
 	if(!taskStartDate) {
 		console.log(`${nowStr}: ${eventTitle} (No Date)`);
 		return;
@@ -275,6 +275,7 @@ const refresh = async() => {
 		}
 		for(let taskPage of taskPages) {
 			const taskPageId =  taskPage.id;
+			const taskUrl = taskPage.url;
 			const taskTitle = taskPage.properties["제목"].title[0]?.plain_text;
 			const taskStartDate = strToDate(taskPage.properties["날짜"].date?.start);
 			const taskEndDate = strToDate(taskPage.properties["날짜"].date?.end);
@@ -296,7 +297,7 @@ const refresh = async() => {
 			const taskPersonNames = await Promise.all(taskPersonNamePromises);
 			const taskPersonNamesStr = taskPersonNames.join(", ");
 
-			await insertEvent(auth, databaseId, taskPageId, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr);
+			await insertEvent(auth, databaseId, taskPageId, taskUrl, databaseName, taskProjectNamesStr, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesStr);
 		}
 	}
 };
