@@ -1,5 +1,5 @@
 # NotionIntegrator
-Notion to Google Calendar 1-way 연동 및 통합 봇
+Notion to Google Calendar 1-way 연동 및 통합 봇\
 MetaDB에 DB 별로 흩어진 Task들을 통합하여 구글 캘린더에 자동으로 업로드합니다.
 
 # Usage
