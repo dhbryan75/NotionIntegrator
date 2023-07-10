@@ -149,8 +149,8 @@ const insertEvent = async(auth, databaseId, taskPageId, taskUrl, databaseName, t
 	};
 	const calendar = google.calendar({version: 'v3', auth});
 
-	const searchStartDate = new Date(taskStartDate.getTime() - msPerDay);
-	const searchEndDate = new Date(taskEndDate.getTime() + msPerDay);
+	const searchStartDate = new Date(taskStartDate.getTime() - 3 * msPerDay);
+	const searchEndDate = new Date(taskEndDate.getTime() + 3 * msPerDay);
 	const searchResult = await calendar.events.list({
 		auth: auth,
 		calendarId: 'primary',
