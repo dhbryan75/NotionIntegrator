@@ -15,8 +15,8 @@ const secPerMin = 60;
 const minPerHour = 60;
 const hourPerDay = 24;
 const msPerDay = msPerSec * secPerMin * minPerHour * hourPerDay;
-// const refreshIntervalMs = msPerSec * secPerMin * 5;
-const refreshIntervalMs = msPerSec * secPerMin * minPerHour * 10;
+const refreshIntervalMs = msPerSec * secPerMin * 5;
+// const refreshIntervalMs = msPerSec * secPerMin * minPerHour * 10;
 // const refreshIntervalMs = msPerDay * 7 * 10000;
 const pageSize = 50;
 
