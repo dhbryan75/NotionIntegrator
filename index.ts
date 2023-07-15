@@ -6,6 +6,8 @@ const { Client } = require("@notionhq/client");
 const { authenticate } = require('@google-cloud/local-auth');
 const { google } = require('googleapis');
 
+Dotenv.config();
+
 // DB > MetaDB > Single DB > DoNotErase > Tasks > Single Task
 
 type NotionObject = { [key: string]: any };
@@ -15,7 +17,7 @@ const secPerMin = 60;
 const minPerHour = 60;
 const hourPerDay = 24;
 const msPerDay = msPerSec * secPerMin * minPerHour * hourPerDay;
-const refreshIntervalMs = msPerSec * secPerMin * 5;
+const refreshIntervalMs = msPerSec * secPerMin * parseInt(process.env.REFRESH_INTERVAL_MINUTE || "5");
 // const refreshIntervalMs = msPerSec * secPerMin * minPerHour * 10;
 // const refreshIntervalMs = msPerDay * 7 * 10000;
 const pageSize = 50;
@@ -196,7 +198,6 @@ const refresh = async() => {
 	const lastUpdateMs = nowMinuteMs - refreshIntervalMs;
 	console.log(`Refresh Started At: ${dateToDateTimeString(new Date(nowMs))}`);
 
-	Dotenv.config();
 	const notion = new Client({
 		auth: process.env.NOTION_TOKEN,
 	});
