@@ -6,6 +6,7 @@
 *.env
 *.test.*
 *.db
+*.out
 
 credentials.json
 token.json

@@ -207,7 +207,10 @@ const refresh = async() => {
 		page_size: pageSize,
 	})).results;
 
-	for(const databasePage of databasePages) {
+	for(const databasePage of databasePages) {		
+		if(!databasePage.properties["캘린더 연동"].checkbox) {
+			continue;
+		}
 		const databaseName = databasePage.properties["이름"].title[0]?.plain_text;
 		const databaseId = databasePage.id;
 		const databaseBlocks = (await notion.blocks.children.list({
