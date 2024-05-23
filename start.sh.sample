@@ -1,1 +1,4 @@
+cd /home/ubuntu/NotionIntegrator/
 nohup node /home/ubuntu/NotionIntegrator/index.js >> /home/ubuntu/NotionIntegrator/result.out &
+
+# chmod 777 start.sh
