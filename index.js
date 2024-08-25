@@ -191,117 +191,116 @@ const insertEvent = async(auth, databaseId, taskPageId, taskUrl, databaseName, t
 };
 
 const refresh = async() => {
-	const auth = await authorize();
-	const nowMs = Date.now();
-	const nowMinuteMs = nowMs - (nowMs % (msPerSec * secPerMin));
-	const lastUpdateMs = nowMinuteMs - refreshIntervalMs;
-	console.log(`Refresh Started At: ${dateToDateTimeString(new Date(nowMs))}`);
-
-	const notion = new Client({
-		auth: process.env.NOTION_TOKEN,
-	});
-
-	const metaDatabaseId = process.env.META_DATABASE_ID;
-	const databasePages = (await notion.databases.query({
-		database_id: metaDatabaseId,
-		page_size: pageSize,
-	})).results;
-
-	for(const databasePage of databasePages) {		
-		if(!databasePage.properties["캘린더 연동"].checkbox) {
-			continue;
-		}
-		const databaseName = databasePage.properties["이름"].title[0]?.plain_text;
-		const databaseId = databasePage.id;
-		const databaseBlocks = (await notion.blocks.children.list({
-			block_id: databaseId,
-			page_size: pageSize,
-		})).results;
-
-		const callout = databaseBlocks.reverse().find((block) => {
-			return block.type === "callout";
-		});
-		const callOutBlocks = (await notion.blocks.children.list({
-			block_id: callout.id,
-			page_size: pageSize,
-		})).results;
-
-		const toggle = callOutBlocks.find((block) => {
-			return block.type === "toggle";
-		})
-		const toggleBlocks = (await notion.blocks.children.list({
-			block_id: toggle.id,
-			page_size: pageSize,
-		})).results;
-
-		const tasksDatabase = toggleBlocks.find((block) => {
-			if (block.type === "child_database") {
-				return block.child_database.title === "Tasks";
-			}
-			return false;
-		});
-		if(!tasksDatabase) {
-			continue;
-		}
-
-		const recentFilter = {
-			"timestamp": "last_edited_time",
-			"last_edited_time": {
-				"on_or_after": new Date(lastUpdateMs).toISOString().split(".")[0],
-			}
-		};
-
-		let hasMore = true;
-		let nextCursor;
-		let taskPages = [];
-		while (hasMore) {
-			const taskPagesResponse = await notion.databases.query({
-				database_id: tasksDatabase.id,
-				filter: recentFilter,
-				page_size: pageSize,
-				start_cursor: nextCursor,
-			});
-			taskPages.push(...taskPagesResponse.results);
-			hasMore = taskPagesResponse.has_more;
-			if (hasMore) {
-				nextCursor = taskPagesResponse.next_cursor;
-			}
-		}
-		for(const taskPage of taskPages) {
-			const taskPageId =  taskPage.id;
-			const taskUrl = taskPage.url;
-			const taskTitle = taskPage.properties["제목"].title[0]?.plain_text;
-			const taskStartDate = stringToDate(taskPage.properties["날짜"].date?.start);
-			const taskEndDate = stringToDate(taskPage.properties["날짜"].date?.end);
-			const taskStatus = taskPage.properties["상태"].status?.name;
-
-			const taskProjectPages = taskPage.properties["Projects"].relation;
-			const taskProjectNamePromises = taskProjectPages.map(async (page) => {
-				const pageResponse = await notion.pages.retrieve({ page_id: page.id });
-				return pageResponse.properties["제목"].title[0]?.plain_text;
-			});
-			const taskProjectNames = await Promise.all(taskProjectNamePromises);
-			const taskProjectNamesString = taskProjectNames.join(", ");
-
-			const taskPersonPages = taskPage.properties["담당자"].relation;
-			const taskPersonNamePromises = taskPersonPages.map(async (page) => {
-				const pageResponse = await notion.pages.retrieve({ page_id: page.id });
-				return pageResponse.properties["이름"].title[0]?.plain_text;
-			});
-			const taskPersonNames = await Promise.all(taskPersonNamePromises);
-			const taskPersonNamesString = taskPersonNames.join(", ");
-
-			await insertEvent(auth, databaseId, taskPageId, taskUrl, databaseName, taskProjectNamesString, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesString);
-		}
-	}
-};
-
-const main = async () => {
 	try {
-		await refresh();
+		const auth = await authorize();
+		const nowMs = Date.now();
+		const nowMinuteMs = nowMs - (nowMs % (msPerSec * secPerMin));
+		const lastUpdateMs = nowMinuteMs - refreshIntervalMs;
+		// console.log(`Refresh Started At: ${dateToDateTimeString(new Date(nowMs))}`);
+
+		const notion = new Client({
+			auth: process.env.NOTION_TOKEN,
+		});
+
+		const metaDatabaseId = process.env.META_DATABASE_ID;
+		const databasePages = (await notion.databases.query({
+			database_id: metaDatabaseId,
+			page_size: pageSize,
+		})).results;
+
+		for(const databasePage of databasePages) {		
+			if(!databasePage.properties["캘린더 연동"].checkbox) {
+				continue;
+			}
+			const databaseName = databasePage.properties["이름"].title[0]?.plain_text;
+			const databaseId = databasePage.id;
+			const databaseBlocks = (await notion.blocks.children.list({
+				block_id: databaseId,
+				page_size: pageSize,
+			})).results;
+
+			const callout = databaseBlocks.reverse().find((block) => {
+				return block.type === "callout";
+			});
+			const callOutBlocks = (await notion.blocks.children.list({
+				block_id: callout.id,
+				page_size: pageSize,
+			})).results;
+
+			const toggle = callOutBlocks.find((block) => {
+				return block.type === "toggle";
+			})
+			const toggleBlocks = (await notion.blocks.children.list({
+				block_id: toggle.id,
+				page_size: pageSize,
+			})).results;
+
+			const tasksDatabase = toggleBlocks.find((block) => {
+				if (block.type === "child_database") {
+					return block.child_database.title === "Tasks";
+				}
+				return false;
+			});
+			if(!tasksDatabase) {
+				continue;
+			}
+
+			const recentFilter = {
+				"timestamp": "last_edited_time",
+				"last_edited_time": {
+					"on_or_after": new Date(lastUpdateMs).toISOString().split(".")[0],
+				}
+			};
+
+			let hasMore = true;
+			let nextCursor;
+			let taskPages = [];
+			while (hasMore) {
+				const taskPagesResponse = await notion.databases.query({
+					database_id: tasksDatabase.id,
+					filter: recentFilter,
+					page_size: pageSize,
+					start_cursor: nextCursor,
+				});
+				taskPages.push(...taskPagesResponse.results);
+				hasMore = taskPagesResponse.has_more;
+				if (hasMore) {
+					nextCursor = taskPagesResponse.next_cursor;
+				}
+			}
+			for(const taskPage of taskPages) {
+				const taskPageId =  taskPage.id;
+				const taskUrl = taskPage.url;
+				const taskTitle = taskPage.properties["제목"].title[0]?.plain_text;
+				const taskStartDate = stringToDate(taskPage.properties["날짜"].date?.start);
+				const taskEndDate = stringToDate(taskPage.properties["날짜"].date?.end);
+				const taskStatus = taskPage.properties["상태"].status?.name;
+
+				const taskProjectPages = taskPage.properties["Projects"].relation;
+				const taskProjectNamePromises = taskProjectPages.map(async (page) => {
+					const pageResponse = await notion.pages.retrieve({ page_id: page.id });
+					return pageResponse.properties["제목"].title[0]?.plain_text;
+				});
+				const taskProjectNames = await Promise.all(taskProjectNamePromises);
+				const taskProjectNamesString = taskProjectNames.join(", ");
+
+				const taskPersonPages = taskPage.properties["담당자"].relation;
+				const taskPersonNamePromises = taskPersonPages.map(async (page) => {
+					const pageResponse = await notion.pages.retrieve({ page_id: page.id });
+					return pageResponse.properties["이름"].title[0]?.plain_text;
+				});
+				const taskPersonNames = await Promise.all(taskPersonNamePromises);
+				const taskPersonNamesString = taskPersonNames.join(", ");
+
+				await insertEvent(auth, databaseId, taskPageId, taskUrl, databaseName, taskProjectNamesString, taskTitle, taskStatus, taskStartDate, taskEndDate, taskPersonNamesString);
+			}
+		}
 	} catch (error) {
 		console.log(error);
 	}
-}
+	finally {
+		process.exit();
+	}
+};
 
-main();
+refresh();
